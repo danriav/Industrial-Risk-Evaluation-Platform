@@ -1,0 +1,15 @@
+.env
+.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+backups/
+artifacts/backend-uvicorn.*
+
+.git/
+.agents/
+docs/
+src/web/node_modules/
+src/web/dist/
+.pytest_cache/

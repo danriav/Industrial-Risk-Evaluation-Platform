@@ -1,0 +1,29 @@
+groups:
+  - name: mero-platform
+    rules:
+      - alert: MeroBackendDown
+        expr: up{job="mero-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: MERO backend is unavailable
+          description: Prometheus cannot scrape backend metrics on backend:8080.
+
+      - alert: MeroPostgresExporterDown
+        expr: up{job="mero-postgres"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: PostgreSQL exporter is unavailable
+          description: Prometheus cannot scrape postgres-exporter:9187.
+
+      - alert: MeroPrometheusTargetDown
+        expr: up{job="prometheus"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Prometheus self-scrape is unavailable
+          description: Prometheus cannot scrape its own metrics endpoint.

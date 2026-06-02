@@ -1,0 +1,2 @@
+"""MERO FastAPI application package."""
+
