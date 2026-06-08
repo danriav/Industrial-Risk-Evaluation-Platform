@@ -1,6 +1,6 @@
 # Estado de Secuencia Global de Ejecucion
 
-Fecha de revision: 2026-05-22  
+Fecha de revision: 2026-06-08
 Responsable: Agente Auditor Principal / QA Architect
 
 Regla de control: un bloque no puede iniciar si el bloque anterior no fue
@@ -8,9 +8,9 @@ auditado y registrado como aprobado o aprobado con condiciones explicitas.
 
 ## Resumen Ejecutivo
 
-Estado actual: bloque 6 aprobado para integracion tecnica.  
-Siguiente agente habilitado: Agente Auditor Principal para dictamen final con bloqueo de piloto predictivo.  
-Bloque 7 queda listo para cierre documental; el piloto con modelo predictivo queda bloqueado hasta calibracion con datos reales.
+Estado actual: bloque 8 aprobado localmente para push; release demo final pendiente de GitHub Actions remoto en verde.
+Siguiente agente habilitado: Orquestador Base para publicar cambios y verificar CI remoto.
+El piloto con modelo predictivo real sigue bloqueado hasta calibracion con datos reales.
 
 ## Bloque 1: Fundacion del Repositorio
 
@@ -220,11 +220,53 @@ Decision QA: bloques tecnicos 1 a 6 aprobados. El dictamen final debe mantener
 como condiciones de produccion TLS/cifrado en reposo segun politica del cliente
 y aprobacion de umbrales antes de activar discrepancias automaticas.
 
+## Bloque 8: Bootstrap Demo y Publicacion GitHub
+
+Responsable: Agente Orquestador Base, Agente de Datos y ML, Backend, Frontend y Auditor Principal
+Estado: aprobado localmente; release demo publica pendiente de CI remoto
+
+Evidencia encontrada:
+
+- `scripts/bootstrap-demo.py` genera dataset demo, entrena modelo, aplica migraciones,
+  inserta datos sinteticos y ejecuta smoke check predictivo.
+- `docs/demo-data.md` documenta la jerarquia sintetica y declara que no son datos
+  reales de cliente.
+- `README.md` documenta el flujo demo desde checkout limpio.
+- `.gitignore` excluye `.env`, respaldos, modelos generados, datasets reales y
+  artefactos de frontend.
+- `tests/test_demo_integration.py` permite validacion live bajo
+  `RUN_DEMO_INTEGRATION=1`.
+- `tests/test_api.py` cubre respuesta limpia ante modelo faltante.
+- `docs/audit-report-2026-06-08-demo-bootstrap-review.md`.
+- `docs/audit-report-2026-06-08-release-demo-final.md`.
+
+Evidencia ejecutada en auditoria 2026-06-08:
+
+- Backend: `7 passed`, `1 skipped`.
+- Frontend: `1 passed`.
+- Frontend build: aprobado.
+- `npm ci`: aprobado.
+- Bootstrap live con Docker: aprobado.
+- Integracion live: `1 passed`.
+- Busqueda de secretos en archivos rastreables: sin credenciales reales detectadas.
+
+Hallazgo corregido:
+
+- QA-REL-001 por vulnerabilidad critica `GHSA-5xrq-8626-4rwp` en
+  `vitest <3.2.6` fue corregido actualizando `vitest` a `^3.2.6`.
+- `npm audit`: `found 0 vulnerabilities`.
+- `npm run test`: aprobado.
+- `npm run build`: aprobado.
+
+Decision QA: apto para push a GitHub. Queda pendiente confirmar workflows remotos en verde antes de tag/release final.
+
 ## Orden Autorizado a Partir de Ahora
 
-1. Auditor QA emite dictamen final de despliegue tecnico.
-2. Agente Producto / Industrial Reliability SME define y firma reglas de etiquetado, ventanas de riesgo, umbrales y activos criticos con mantenimiento del cliente.
-3. Agente de Datos y ML retoma calibracion cuando exista dataset operativo real y validacion de etiquetas.
+1. Orquestador Base publica los cambios en GitHub.
+2. Orquestador Base confirma workflows remotos de GitHub Actions en verde.
+3. Auditor QA emite cierre final de release demo si los checks remotos pasan.
+4. Agente Producto / Industrial Reliability SME define y firma reglas de etiquetado, ventanas de riesgo, umbrales y activos criticos con mantenimiento del cliente.
+5. Agente de Datos y ML retoma calibracion cuando exista dataset operativo real y validacion de etiquetas.
 
 ## Bloqueos Activos
 
@@ -233,3 +275,4 @@ y aprobacion de umbrales antes de activar discrepancias automaticas.
 - Piloto con uso predictivo del modelo bloqueado hasta entrenar y validar con datos reales, validacion temporal y firma de etiquetas por mantenimiento.
 - No se entrena ni aprueba modelo real sin reglas de etiquetado firmadas por el
   Agente Producto / Industrial Reliability SME y por mantenimiento del cliente.
+- Release demo publica pendiente de confirmar CI remoto en verde.

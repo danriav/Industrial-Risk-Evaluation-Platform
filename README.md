@@ -92,24 +92,36 @@ cp .env.example .env
 
 Edit `.env` and replace every `CHANGE_ME` value before starting the stack.
 
-Generate the demo training dataset and model:
-
-```sh
-python -m pip install -r src/api/requirements.txt
-python src/ml/prepare_seed_dataset.py --output data/training_seed.csv --rows 240
-python src/ml/train.py --input data/training_seed.csv --target failure_label --output artifacts/models/random_forest.joblib --metrics artifacts/models/random_forest_metrics.json --model-version demo_seed_local
-```
-
 Start the platform:
 
 ```sh
 docker compose up -d --build
 ```
 
-Apply the database schema:
+Bootstrap demo data, migrations, model artifact, and a prediction smoke check:
 
 ```sh
-python scripts/apply-db-migrations.py
+python scripts/bootstrap-demo.py
+```
+
+The bootstrap command:
+
+- Generates `data/training_seed.csv`.
+- Trains `artifacts/models/random_forest.joblib`.
+- Writes `artifacts/models/random_forest_metrics.json`.
+- Applies SQL migrations.
+- Inserts a synthetic demo hierarchy with 2 plants, 3 lines, 4 cells, 8 equipment records, failure catalog, sensor observations, maintenance logs, and thresholds.
+- Leaves 2 demo equipment records without recent sensors so the dashboard can show partial-data states.
+- Verifies `/api/v1/predictions/risk` with `PUMP-01`.
+
+Use `python scripts/bootstrap-demo.py --restart-backend` when you need to refresh a backend that already cached a previous model.
+
+End-to-end demo flow from a clean checkout:
+
+```sh
+cp .env.example .env
+docker compose up -d --build
+python scripts/bootstrap-demo.py
 ```
 
 ## Local URLs
@@ -122,6 +134,30 @@ python scripts/apply-db-migrations.py
 - Grafana: `http://localhost:3001`
 
 Use the Basic Auth credentials configured in `.env` for the application API and frontend form. Use the Grafana credentials configured in `.env` for Grafana.
+
+## Screenshots
+
+The screenshots below use synthetic demo data and do not show passwords, tokens, connection strings, or raw credentials.
+
+### Dashboard
+
+![Operational risk dashboard](docs/assets/dashboard.png)
+
+### Risk Heat Map
+
+![Predictive risk heat map](docs/assets/heatmap.png)
+
+### Maintenance Log
+
+![Human maintenance log](docs/assets/maintenance-log.png)
+
+### API Docs
+
+![OpenAPI documentation](docs/assets/api-docs.png)
+
+### Grafana
+
+![Grafana observability dashboard](docs/assets/grafana.png)
 
 ## Testing
 
@@ -153,6 +189,7 @@ It should not be treated as an operational predictive model because:
 
 The expected path for a real pilot is documented in:
 
+- `docs/demo-data.md`
 - `docs/data-dictionary-real.md`
 - `docs/ml-calibration-report.md`
 - `docs/model-validation-report.md`

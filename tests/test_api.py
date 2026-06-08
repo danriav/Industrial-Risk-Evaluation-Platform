@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from fastapi import HTTPException
@@ -9,7 +10,8 @@ from sqlalchemy.exc import OperationalError
 
 from src.api.database import get_db
 from src.api.main import app
-from src.api.ml import predict_risk
+from src.api.config import settings
+from src.api.ml import load_model_bundle, predict_risk
 from src.api.security import require_basic_auth
 
 
@@ -111,6 +113,36 @@ class ApiTests(unittest.TestCase):
 
         self.assertEqual(error.exception.status_code, 503)
         self.assertEqual(error.exception.detail, "Model prediction failed")
+
+    def test_missing_model_artifact_returns_clean_error(self) -> None:
+        app.dependency_overrides[require_basic_auth] = override_auth
+        original_model_path = settings.model_path
+        payload = {
+            "equipment_id": "00000000-0000-0000-0000-000000000040",
+            "observed_at": "2026-06-03T23:00:00Z",
+            "features": {
+                "equipment_class": "centrifugal_pump",
+                "temperature_c": 68.0,
+                "vibration_mm_s": 3.2,
+                "pressure_bar": 8.2,
+                "rpm": 1780,
+                "operating_hours": 12043,
+                "load_pct": 63.0,
+                "sensor_quality": "good",
+            },
+        }
+
+        try:
+            load_model_bundle.cache_clear()
+            object.__setattr__(settings, "model_path", Path("artifacts/models/missing_model.joblib"))
+            response = self.client.post("/api/v1/predictions/risk", json=payload)
+        finally:
+            object.__setattr__(settings, "model_path", original_model_path)
+            load_model_bundle.cache_clear()
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("Model artifact not found", response.json()["detail"])
+        self.assertNotIn("traceback", response.text.lower())
 
 
 if __name__ == "__main__":

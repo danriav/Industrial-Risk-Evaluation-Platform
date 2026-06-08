@@ -146,3 +146,41 @@ Validacion de errores:
 - La respuesta incluye `required_features`, `missing_features` y
   `extra_features`.
 - Los errores del modelo se convierten en respuestas limpias, sin `500` crudo.
+
+## Verificacion post-bootstrap desde cero
+
+Fecha de verificacion: 2026-06-03
+
+Servicios observados:
+
+- `backend` arriba en `8080`.
+- `database` arriba y saludable en `5432`.
+- `prometheus`, `grafana`, `postgres-exporter`, `frontend` y `db-backup`
+  activos.
+
+Endpoints verificados contra el backend en Docker:
+
+- `GET /health`: `200`.
+- `GET /api/v1/assets/hierarchy`: `200`.
+- `GET /api/v1/failure-catalog`: `200`.
+- `GET /api/v1/sensor-observations`: `200`.
+- `GET /api/v1/maintenance-logs`: `200`.
+- `POST /api/v1/predictions/risk`: `200`, con `risk_label` en
+  `low | medium | high`.
+
+Pruebas automatizadas:
+
+- Suite normal: `7 passed`, `1 skipped`.
+- Integracion live de datos demo: `1 passed`.
+
+Error de modelo faltante:
+
+- Cubierto por `tests/test_api.py`.
+- La API devuelve `503` con mensaje limpio cuando el artefacto no existe.
+- No se expone traceback.
+
+Revision de logs:
+
+- Se revisaron los ultimos 300 eventos del backend.
+- No se encontraron `DATABASE_URL`, passwords, encabezados de autorizacion ni
+  campos crudos de sensores como `temperature_c` o `vibration_mm_s`.
